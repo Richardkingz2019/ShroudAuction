@@ -22,6 +22,11 @@ const SEED = WALLET.seed;
   if (notice) console.log(notice);
 }
 
+// --no-sync prints the wallet's address and stops there. The address comes from
+// the seed rather than the chain, so it is available before any sync — and a
+// wallet that has never synced needs its address first in order to be funded.
+const NO_SYNC = process.argv.includes('--no-sync');
+
 // ─── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -35,6 +40,26 @@ async function main() {
     const restoredCount = Object.values(walletCtx.restored).filter(Boolean).length;
     if (restoredCount > 0) {
       console.log(`  Restored ${restoredCount}/3 child wallets from .midnight-wallet-state — sync will resume from saved point.`);
+    }
+
+    if (NO_SYNC) {
+      console.log('');
+      console.log(`  Address: ${walletCtx.unshieldedKeystore.getBech32Address()}`);
+      console.log(`  Network: ${networkConfig.networkId}`);
+      const pending = getDeployment(network);
+      if (pending) {
+        console.log(`  Contract: ${pending.address}`);
+        console.log(`  Deployed: ${pending.deployedAt}`);
+      }
+      if (networkConfig.faucet) {
+        console.log(`  Faucet:  ${networkConfig.faucet}`);
+      }
+      console.log('');
+      console.log('  Skipped the network sync (--no-sync). Fund the address above, then');
+      console.log('  run again without --no-sync to check the balance.');
+      console.log('');
+      await walletCtx.wallet.stop();
+      return;
     }
 
     console.log('  Syncing with network...');

@@ -19,7 +19,7 @@ mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
 
 Funding is the one step of a deploy that has to happen in a browser: the faucet's public API is captcha-gated, so no script can drive it (see Notes). That matters again whenever the wallet changes — `npm run clean` discards it, and the next deploy creates a different wallet and address.
 
-1. Open the Preview faucet: <https://midnight-tmnight-preview.nethermind.dev>
+1. Open the network's faucet — <https://midnight-tmnight-preview.nethermind.dev> for Preview, <https://midnight-tmnight-preprod.nethermind.dev> for Preprod.
 2. Paste the wallet address the deploy prints and request a drip.
 3. Confirm it landed, then deploy:
 
@@ -29,6 +29,14 @@ Funding is the one step of a deploy that has to happen in a browser: the faucet'
    ```
 
 `deploy:preview` waits up to 10 minutes for the drip (`MIDNIGHT_FAUCET_TIMEOUT_MS` overrides it), registers the NIGHT for DUST, deploys, and rewrites the Preview row above from the recorded state — so the address is never retyped by hand.
+
+The first sync of a wallet on a new network is the slow part of that, and it runs *before* the address is printed — which is awkward when the address is what you need in order to fund it. `--no-sync` skips the sync because the address derives from the seed rather than the chain:
+
+```bash
+npm run check-balance -- --network preprod --no-sync   # address in seconds
+```
+
+The Preprod deployer wallet is `mn_addr_preprod1yms6jevlk8pvsgv9r4aphjdr283qf3v6yg8lt50vl3yzunn2zh9stxvytv` — fund it at the Preprod faucet above before deploying there.
 
 The address is safe to publish: it is a public address, not a key. The recovery phrase in the same gitignored file is the opposite — anyone holding it controls the funds.
 
@@ -93,7 +101,7 @@ A losing bidder who never reveals leaks nothing at all. A losing bidder who does
 
 ## Prerequisites
 
-- **Node.js v22** (`node --version` → `v22.x`). Node 24 is not what the SDK is tested against.
+- **Node.js v22** (`node --version` → `v22.x`). Node 24 is not what the SDK is tested against. A `.nvmrc` pins the major, so `nvm use` picks the right one up.
 - **Docker** running, with Compose v2.
 - **The Compact toolchain**, at the version this project was built against:
 
