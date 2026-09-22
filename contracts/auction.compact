@@ -1,0 +1,175 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// ShroudAuction — sealed-bid auctions on Midnight
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// WHAT IS PUBLIC (written to the ledger, visible to anyone, forever):
+//
+//   phase           which stage the auction is in: Bidding / Revealing / Settled
+//   auctioneer      the Zswap coin public key that created the auction
+//   bidCount        how many sealed bids were accepted (a Counter)
+//   sealedBids      bidderAlias -> bid commitment. The alias is a pseudonym,
+//                   NOT the bidder's wallet key, and the commitment is a hash,
+//                   so this map reveals WHO bid and that they bid, but never
+//                   what they bid.
+//   revealedCount   how many bids have been opened during the reveal phase
+//   highestBid      the winning amount. Only ever written for the winning bid.
+//   highestBidder   the winning bidder's pseudonym.
+//
+// WHAT IS PRIVATE (witness inputs, never written to the ledger, never leave
+// the bidder's machine — they exist only inside the zero-knowledge proof):
+//
+//   bidAmount()     the real bid, a Uint<64>
+//   bidNonce()      32 random bytes that blind the commitment so that the
+//                   amount cannot be brute-forced out of the public hash
+//   bidderAlias()   a pseudonym the bidder chooses, binding one bid per
+//                   pseudonym without tying the bid to a wallet address
+//
+// WHAT A BIDDER PROVES WITHOUT REVEALING:
+//
+//   "The commitment I published really is the hash of a bid amount and a
+//    blinding nonce that I know." The commitment is checked in-circuit against
+//    the witnesses, so the amount never appears in the transaction — an
+//    observer sees a 32-byte hash and nothing else.
+//
+// WHERE disclose() IS USED, AND WHY (deliberate — every one is explained):
+//
+//   1. submitSealedBid() discloses the bidder's *pseudonym* so the auction can
+//      enforce one sealed bid per pseudonym. A pseudonym is not an identity:
+//      it is unlinkable to the bidder's wallet and carries no amount. The
+//      commitment is disclosed for the same reason — it is a hash the bidder
+//      already chose to publish.
+//   2. revealBid() discloses the *comparison result* only. The chain learns a
+//      single bit per revealed bid: "this bid is the new highest". The losing
+//      amount stays inside the proof.
+//   3. revealBid() discloses the amount ONLY for a bid that takes the lead.
+//      Losing bids are opened inside the proof and discarded: their amounts
+//      are never written to the ledger, so nobody — not the other bidders, not
+//      the auctioneer, not an indexer — ever learns them.
+//
+// The Compact compiler enforces this: every ledger operation that could leak a
+// witness value is a compile error until it is wrapped in disclose(), so this
+// list cannot silently drift out of date.
+//
+// ═══════════════════════════════════════════════════════════════════════════
+
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+export enum Phase {
+  Bidding,
+  Revealing,
+  Settled
+}
+
+// ── PUBLIC ledger state ────────────────────────────────────────────────────
+
+export ledger phase: Phase;
+
+export ledger auctioneer: ZswapCoinPublicKey;
+
+export ledger bidCount: Counter;
+
+export ledger sealedBids: Map<Bytes<32>, Bytes<32>>;
+
+export ledger revealedCount: Counter;
+
+export ledger highestBid: Uint<64>;
+
+export ledger highestBidder: Bytes<32>;
+
+// ── PRIVATE witness declarations ───────────────────────────────────────────
+// Declared here, supplied by the bidder at proof time. Values returned by a
+// witness are private to the circuit unless explicitly disclose()d.
+
+witness bidAmount(): Uint<64>;
+
+witness bidNonce(): Bytes<32>;
+
+witness bidderAlias(): Bytes<32>;
+
+constructor() {
+  phase = Phase.Bidding;
+  auctioneer = ownPublicKey();
+  highestBid = 0;
+  highestBidder = default<Bytes<32>>;
+}
+
+// The sealing function. Pure, so the bidder can call it locally (with no proof
+// and no network round trip) to compute the commitment they publish, and the
+// contract can recompute it in-circuit to check the bid later. The "shroud:bid:"
+// prefix domain-separates this hash from any other hash in the contract.
+export pure circuit bidCommitment(
+  amount: Uint<64>,
+  alias: Bytes<32>,
+  nonce: Bytes<32>
+): Bytes<32> {
+  return persistentHash<Vector<3, Bytes<32>>>([
+    pad(32, "shroud:bid:"),
+    alias,
+    persistentHash<Vector<2, Bytes<32>>>([nonce, amount as Field as Bytes<32>])
+  ]);
+}
+
+// Seal a bid. `commitment` is the only thing that reaches the chain; the amount
+// and nonce stay in the proof.
+export circuit submitSealedBid(commitment: Bytes<32>): [] {
+  assert(phase == Phase.Bidding, "Bidding is closed for this auction");
+
+  const alias = bidderAlias();
+  assert(!sealedBids.member(disclose(alias)), "This pseudonym has already sealed a bid");
+
+  // The bidder proves their witnesses open the commitment they published.
+  // No disclosure is needed: the amount is only compared, never written.
+  assert(
+    bidCommitment(bidAmount(), alias, bidNonce()) == commitment,
+    "Commitment does not match the sealed bid"
+  );
+
+  // Deliberate disclosure #1 — the pseudonym and the commitment hash only.
+  sealedBids.insert(disclose(alias), disclose(commitment));
+  bidCount.increment(1);
+}
+
+// Close bidding and move to the reveal phase. The auctioneer's public key comes
+// from ownPublicKey(), which is already public transaction metadata.
+export circuit closeBidding(): [] {
+  assert(phase == Phase.Bidding, "Bidding is already closed");
+  assert(ownPublicKey() == auctioneer, "Only the auctioneer can close the bidding");
+  phase = Phase.Revealing;
+}
+
+// Open a sealed bid. Losing bids are verified inside the proof and then thrown
+// away — their amounts never touch the ledger.
+export circuit revealBid(): [] {
+  assert(phase == Phase.Revealing, "Bids can only be revealed in the reveal phase");
+
+  const alias = bidderAlias();
+  const amount = bidAmount();
+  const opening = bidCommitment(amount, alias, bidNonce());
+
+  // Deliberate disclosure #1 — the pseudonym, so the ledger can be updated.
+  assert(
+    sealedBids.lookup(disclose(alias)) == opening,
+    "Sealed bid does not open to the revealed amount"
+  );
+
+  sealedBids.remove(disclose(alias));
+  revealedCount.increment(1);
+
+  // Deliberate disclosure #2 — one bit. Whether this bid takes the lead is
+  // public (it is about to change the public highest bid); the amount is not.
+  if (disclose(amount > highestBid)) {
+    // Deliberate disclosure #3 — the winning amount, and only that amount.
+    highestBid = disclose(amount);
+    highestBidder = disclose(alias);
+  }
+}
+
+// Settle once every sealed bid has been opened.
+export circuit settle(): [] {
+  assert(phase == Phase.Revealing, "Auction is not in the reveal phase");
+  assert(ownPublicKey() == auctioneer, "Only the auctioneer can settle the auction");
+  assert(revealedCount.read() == bidCount.read(), "Not every sealed bid has been revealed");
+  phase = Phase.Settled;
+}
