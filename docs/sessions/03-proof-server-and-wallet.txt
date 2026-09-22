@@ -1,8 +1,8 @@
 $ docker ps --format '{{.Names}}  {{.Image}}  {{.Status}}'
-ps-c  midnightntwrk/proof-server:8.1.0  Up 4 hours
+ps-c  midnightntwrk/proof-server:8.1.0  Up 5 hours
 
 $ curl -s http://localhost:6300/health
-{"status":"ok","timestamp":"2026-09-22 04:34:27.529909868 +00:00:00"}
+{"status":"ok","timestamp":"2026-09-22 05:07:44.715132464 +00:00:00"}
 
 $ npm run check-balance -- --network preview
 
@@ -28,14 +28,15 @@ $ npm run check-balance -- --network preview
   Address: mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
   Network: preview
 
+  Contract: d3c3fc548fc3304c7ff9ab5019e3e35e051e3a26c71fc1dcc45968e89c3934d6
+  Deployed: 2026-09-22T05:02:52.601Z
+
 ─── Balances ───────────────────────────────────────────────────
 
-  tNight: 0
-  DUST:   0
+  tNight: 5,000,000,000
+  DUST:   19,334,124,999,999,998
 
-  ⚠ Wallet has no tNight. Fund it from the faucet:
-     https://midnight-tmnight-preview.nethermind.dev
-     Wallet address: mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
+  ✓ Wallet is funded and ready!
 
-2026-09-22 04:34:33        RPC-CORE: subscribeRuntimeVersion(): RuntimeVersion:: disconnected from wss://rpc.preview.midnight.network/: 1000:: Normal Closure
-2026-09-22 04:34:33        RPC-CORE: subscribeRuntimeVersion(): RuntimeVersion:: disconnected from wss://rpc.preview.midnight.network/: 1000:: Normal Closure
+2026-09-22 05:07:49        RPC-CORE: subscribeRuntimeVersion(): RuntimeVersion:: disconnected from wss://rpc.preview.midnight.network/: 1000:: Normal Closure
+2026-09-22 05:07:49        RPC-CORE: subscribeRuntimeVersion(): RuntimeVersion:: disconnected from wss://rpc.preview.midnight.network/: 1000:: Normal Closure

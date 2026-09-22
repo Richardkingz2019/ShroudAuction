@@ -234,15 +234,17 @@ Every image below is generated from real command output by `scripts/render-scree
 
 ![Vitest output showing 14 passing tests](docs/img/02-tests.png)
 
-**Proof server healthy on port 6300, and the deployer wallet's on-chain balance** — captured before the wallet was funded, so it reports 0 tNight. The Preview deploy that followed it is what the address table at the top now shows:
+**Proof server healthy on port 6300, the funded deployer wallet, and the contract it deployed** — the faucet drip landed and the Preview deploy went out, so the wallet reports the tNIGHT it was funded with and the DUST that pays the fees, alongside the contract address from the table at the top:
 
-![Proof server health check and a Preview wallet balance reporting 0 tNight](docs/img/03-proof-server-and-wallet.png)
+![Proof server health check, a funded Preview wallet reporting 5,000,000,000 tNight, and the deployed contract address](docs/img/03-proof-server-and-wallet.png)
 
 Regenerate them with:
 
 ```bash
 python3 scripts/render-screenshots.py                # run the commands, capture, render
 python3 scripts/render-screenshots.py --render-only   # re-render from docs/sessions/
+python3 scripts/render-screenshots.py --only 03-proof-server-and-wallet   # refresh one capture
+python3 scripts/render-screenshots.py --only 01-compile --only 02-tests   # --only repeats
 ```
 
 The renderer is a standalone Python script (it needs Pillow, and the DejaVu Sans Mono face that ships with most Linux distributions) so it stays out of the project's Node dependency tree.
