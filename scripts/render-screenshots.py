@@ -85,7 +85,14 @@ ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 # Characters we will not find in DejaVu Sans Mono. Verified against the font's
 # own cmap at runtime, so this only ever fires for something genuinely missing.
-FALLBACK = {"\u274c": "x", "\u26a0": "!", "\u2139": "i", "\U0001f512": "", "\u2026": "..."}
+FALLBACK = {
+    "\u274c": "x",
+    "\u2705": "\u2713",
+    "\u26a0": "!",
+    "\u2139": "i",
+    "\U0001f512": "",
+    "\u2026": "...",
+}
 
 
 def load_cmap(path: Path) -> set[int]:
@@ -270,6 +277,13 @@ def main() -> int:
         action="store_true",
         help="re-render docs/sessions/*.txt instead of running the commands",
     )
+    ap.add_argument(
+        "--only",
+        action="append",
+        metavar="SLUG",
+        help="only process these session slugs (repeatable); needed to refresh one "
+        "capture without re-running the others",
+    )
     args = ap.parse_args()
 
     IMG_DIR.mkdir(parents=True, exist_ok=True)
@@ -279,6 +293,8 @@ def main() -> int:
 
     for session in SESSIONS:
         slug, title = session["slug"], session["title"]
+        if args.only and slug not in args.only:
+            continue
         txt = TXT_DIR / f"{slug}.txt"
         missing: set[str] = set()
         if args.render_only:
@@ -300,6 +316,11 @@ def main() -> int:
 
     if all_missing:
         print(f"\nsubstituted (absent from the font): {' '.join(sorted(all_missing))}")
+    if args.only:
+        unknown = [s for s in args.only if s not in {x["slug"] for x in SESSIONS}]
+        if unknown:
+            print(f"\nunknown session slug(s): {', '.join(unknown)}")
+            return 1
     return 0
 
 

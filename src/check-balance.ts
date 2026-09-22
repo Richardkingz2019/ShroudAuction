@@ -4,7 +4,7 @@
 import { WebSocket } from 'ws';
 
 // Midnight SDK imports
-import { resolveNetwork, getOrCreateWallet, formatWalletBackupNotice } from './network';
+import { resolveNetwork, getOrCreateWallet, formatWalletBackupNotice, getDeployment } from './network';
 // unshieldedToken is re-exported from ./wallet (originally @midnight-ntwrk/midnight-js-protocol/ledger).
 import { createWallet, persistWalletState, unshieldedToken } from './wallet';
 
@@ -56,6 +56,14 @@ async function main() {
     console.log('\n─── Wallet Details ─────────────────────────────────────────────\n');
     console.log(`  Address: ${address}`);
     console.log(`  Network: ${networkConfig.networkId}\n`);
+
+    // What this network's wallet has deployed, read from the recorded state —
+    // saves a trip to the README to answer "is anything deployed here?".
+    const deployment = getDeployment(network);
+    if (deployment) {
+      console.log(`  Contract: ${deployment.address}`);
+      console.log(`  Deployed: ${deployment.deployedAt}\n`);
+    }
 
     console.log('─── Balances ───────────────────────────────────────────────────\n');
     console.log(`  tNight: ${tNightBalance.toLocaleString()}`);
