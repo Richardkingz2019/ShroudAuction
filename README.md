@@ -4,14 +4,32 @@
 
 ## Contract Address
 
-| Network  | Address                                    |
-| -------- | ------------------------------------------ |
-| Preview  | _[pending — see note below]_                |
-| Preprod  | _[not deployed yet]_                        |
+| Network  | Address                 |
+| -------- | ----------------------- |
+| Preview  | _[pending — see below]_ |
+| Preprod  | _[not deployed yet]_    |
 
-The Preview wallet has synced against the live network and holds nothing, so no contract address exists yet. Funding has to come from a browser, because the faucet's public API is captcha-gated (see Notes): open <https://midnight-tmnight-preview.nethermind.dev>, paste the address below, and then run `npm run deploy:preview`, which deploys and writes the Preview row above in one step.
+### Fund This Wallet
 
-Preview deployer wallet: `mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq`
+The Preview deployer wallet has synced against the live network and holds nothing, so no contract address exists yet. Funding is the one step that has to happen in a browser: the faucet's public API is captcha-gated, so a script cannot drive it (see Notes).
+
+1. Open the Preview faucet: <https://midnight-tmnight-preview.nethermind.dev>
+2. Paste this address and request a drip:
+
+   ```
+   mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
+   ```
+
+3. Confirm the funds landed, then deploy:
+
+   ```bash
+   npm run check-balance -- --network preview   # tNight should be non-zero
+   npm run deploy:preview
+   ```
+
+Last checked 2026-09-22 with `npm run check-balance -- --network preview`: tNight `0`, DUST `0`. The wallet is still unfunded, so these three steps are the current next action.
+
+The address comes from the wallet in `.midnight-state.json`, which is gitignored. It is safe to publish — it is a public address, not a key. The recovery phrase in that same file is the opposite: anyone holding it controls the funds.
 
 ## What This Does
 
