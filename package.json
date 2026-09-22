@@ -22,7 +22,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "tsx scripts/e2e-check.ts",
-    "screenshots": "python3 scripts/render-screenshots.py"
+    "screenshots": "python3 scripts/render-screenshots.py",
+    "frontend:install": "npm --prefix frontend install --legacy-peer-deps",
+    "frontend:sync": "npm --prefix frontend run sync:artifacts",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.16.0",

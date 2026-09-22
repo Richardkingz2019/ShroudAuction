@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Vercel project link (local CLI state)
+.vercel/
+
+# Editor / OS
+.DS_Store
+*.log
+
+# NOTE: public/contracts/auction/** and src/generated/auction-contract/** are
+# produced by `npm run sync:artifacts` from contracts/managed/. They are
+# intentionally NOT ignored: Vercel has no Compact toolchain, so the compiled
+# keys, zkir and contract module must be committed for the static deploy.
+.vercel
