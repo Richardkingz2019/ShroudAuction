@@ -48,6 +48,8 @@ coverage/
 
 # Private state
 *-state/
+# Contract private state — LevelDB store written by the deploy
+midnight-level-db/
 
 # Temporary files
 tmp/
