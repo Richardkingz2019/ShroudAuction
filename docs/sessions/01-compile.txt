@@ -1,0 +1,32 @@
+$ rm -rf contracts/managed && npm run compile
+
+> shroudauction@1.0.0 compile
+> compact compile contracts/auction.compact contracts/managed/auction
+
+Compiling 4 circuits:
+
+$ find contracts/managed/auction -type f | sort
+contracts/managed/auction/compiler/contract-info.json
+contracts/managed/auction/contract/index.d.ts
+contracts/managed/auction/contract/index.js
+contracts/managed/auction/contract/index.js.map
+contracts/managed/auction/keys/closeBidding.prover
+contracts/managed/auction/keys/closeBidding.verifier
+contracts/managed/auction/keys/revealBid.prover
+contracts/managed/auction/keys/revealBid.verifier
+contracts/managed/auction/keys/settle.prover
+contracts/managed/auction/keys/settle.verifier
+contracts/managed/auction/keys/submitSealedBid.prover
+contracts/managed/auction/keys/submitSealedBid.verifier
+contracts/managed/auction/zkir/closeBidding.bzkir
+contracts/managed/auction/zkir/closeBidding.zkir
+contracts/managed/auction/zkir/revealBid.bzkir
+contracts/managed/auction/zkir/revealBid.zkir
+contracts/managed/auction/zkir/settle.bzkir
+contracts/managed/auction/zkir/settle.zkir
+contracts/managed/auction/zkir/submitSealedBid.bzkir
+contracts/managed/auction/zkir/submitSealedBid.zkir
+
+$ du -sh contracts/managed/auction/keys contracts/managed/auction/zkir
+11M contracts/managed/auction/keys
+48K contracts/managed/auction/zkir

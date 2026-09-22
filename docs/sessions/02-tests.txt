@@ -1,0 +1,15 @@
+$ npm test
+
+> shroudauction@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /workspaces/ShroudAuction
+
+Sourcemap for "/workspaces/ShroudAuction/contracts/managed/auction/contract/index.js" points to missing source files
+ ✓ tests/auction.test.ts (14 tests) 804ms
+
+ Test Files  1 passed (1)
+      Tests  14 passed (14)
+   Start at  04:34:26
+   Duration  1.25s (transform 183ms, setup 0ms, import 255ms, tests 804ms, environment 0ms)

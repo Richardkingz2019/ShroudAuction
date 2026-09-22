@@ -1,0 +1,41 @@
+$ docker ps --format '{{.Names}}  {{.Image}}  {{.Status}}'
+ps-c  midnightntwrk/proof-server:8.1.0  Up 4 hours
+
+$ curl -s http://localhost:6300/health
+{"status":"ok","timestamp":"2026-09-22 04:34:27.529909868 +00:00:00"}
+
+$ npm run check-balance -- --network preview
+
+> shroudauction@1.0.0 check-balance
+> npx tsx src/check-balance.ts --network preview
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                   Wallet Balance Checker                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+  Building wallet...
+  Restored 3/3 child wallets from .midnight-wallet-state — sync will resume from saved point.
+  Syncing with network...
+  i  This may take several minutes depending on network size.
+     RPC disconnection messages during sync are normal and can be safely ignored.
+
+
+  ✓ Synced with network.
+
+─── Wallet Details ─────────────────────────────────────────────
+
+  Address: mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
+  Network: preview
+
+─── Balances ───────────────────────────────────────────────────
+
+  tNight: 0
+  DUST:   0
+
+  ⚠ Wallet has no tNight. Fund it from the faucet:
+     https://midnight-tmnight-preview.nethermind.dev
+     Wallet address: mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
+
+2026-09-22 04:34:33        RPC-CORE: subscribeRuntimeVersion(): RuntimeVersion:: disconnected from wss://rpc.preview.midnight.network/: 1000:: Normal Closure
+2026-09-22 04:34:33        RPC-CORE: subscribeRuntimeVersion(): RuntimeVersion:: disconnected from wss://rpc.preview.midnight.network/: 1000:: Normal Closure
