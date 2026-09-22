@@ -9,7 +9,7 @@
 | Preview  | _[pending — see note below]_                |
 | Preprod  | _[not deployed yet]_                        |
 
-The Preview wallet has synced against the live network and is funded with nothing, so no contract address exists yet. `npm run deploy:preview` fills the Preview row in automatically once the faucet transaction lands.
+The Preview wallet has synced against the live network and holds nothing, so no contract address exists yet. Funding has to come from a browser, because the faucet's public API is captcha-gated (see Notes): open <https://midnight-tmnight-preview.nethermind.dev>, paste the address below, and then run `npm run deploy:preview`, which deploys and writes the Preview row above in one step.
 
 Preview deployer wallet: `mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq`
 
@@ -188,7 +188,8 @@ Two layout notes: `compact compile` writes into `contracts/managed/` (that is th
   docker run -d --name proof-server -p 6300:6300 midnightntwrk/proof-server:8.1.0
   docker compose up -d --wait node indexer
   ```
-- **Wallet secrets.** `.midnight-state.json` holds the wallet seed and recovery phrase. It is gitignored and written with `0600` permissions. Back up the phrase if you fund the wallet; anyone holding it controls the funds.
+- **Wallet secrets.** `.midnight-state.json` holds the wallet seed and recovery phrase. It is gitignored and written with `0600` permissions. Back up the phrase if you fund the wallet; anyone holding it controls the funds. Deploying from a fresh checkout creates a *new* wallet, so fund whichever address the deploy prints — or copy the state file across to keep the same one.
+- **Funding a testnet wallet.** The faucet is the only source of testnet tNIGHT, and its public API is captcha-protected, so it cannot be driven from a script. Verified against the live service: `POST /api/drips` answers `400 {"error":"Missing X-Captcha-Token header"}` without the header and `403 {"error":"Captcha verification failed"}` with an unsolved Cloudflare Turnstile token, even though `GET /api/health` reports `SERVING`. Midnight also publishes [`midnightntwrk/midnight-faucet-api`](https://github.com/midnightntwrk/midnight-faucet-api) with an API-key authenticated path for third-party integrations, which needs a key issued by the Midnight team. Everything else about the deploy is automated; this one step is manual by design.
 
 ## Initial Idea
 
