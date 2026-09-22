@@ -4,32 +4,33 @@
 
 ## Contract Address
 
-| Network  | Address                 |
-| -------- | ----------------------- |
-| Preview  | _[pending — see below]_ |
-| Preprod  | _[not deployed yet]_    |
+| Network  | Address                                                          |
+| -------- | ---------------------------------------------------------------- |
+| Preview  | d3c3fc548fc3304c7ff9ab5019e3e35e051e3a26c71fc1dcc45968e89c3934d6 |
+| Preprod  | _[not deployed yet]_                                             |
 
 ### Fund This Wallet
 
-The Preview deployer wallet has synced against the live network and holds nothing, so no contract address exists yet. Funding is the one step that has to happen in a browser: the faucet's public API is captcha-gated, so a script cannot drive it (see Notes).
+The Preview contract above is deployed. It went out on 2026-09-22 from this wallet, which the faucet funded with 5,000,000,000 tNIGHT:
+
+```
+mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
+```
+
+Funding is the one step of a deploy that has to happen in a browser: the faucet's public API is captcha-gated, so no script can drive it (see Notes). That matters again whenever the wallet changes — `npm run clean` discards it, and the next deploy creates a different wallet and address.
 
 1. Open the Preview faucet: <https://midnight-tmnight-preview.nethermind.dev>
-2. Paste this address and request a drip:
-
-   ```
-   mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
-   ```
-
-3. Confirm the funds landed, then deploy:
+2. Paste the wallet address the deploy prints and request a drip.
+3. Confirm it landed, then deploy:
 
    ```bash
    npm run check-balance -- --network preview   # tNight should be non-zero
    npm run deploy:preview
    ```
 
-Last checked 2026-09-22 with `npm run check-balance -- --network preview`: tNight `0`, DUST `0`. The wallet is still unfunded, so these three steps are the current next action.
+`deploy:preview` waits up to 10 minutes for the drip (`MIDNIGHT_FAUCET_TIMEOUT_MS` overrides it), registers the NIGHT for DUST, deploys, and rewrites the Preview row above from the recorded state — so the address is never retyped by hand.
 
-The address comes from the wallet in `.midnight-state.json`, which is gitignored. It is safe to publish — it is a public address, not a key. The recovery phrase in that same file is the opposite: anyone holding it controls the funds.
+The address is safe to publish: it is a public address, not a key. The recovery phrase in the same gitignored file is the opposite — anyone holding it controls the funds.
 
 ## What This Does
 
@@ -233,7 +234,7 @@ Every image below is generated from real command output by `scripts/render-scree
 
 ![Vitest output showing 14 passing tests](docs/img/02-tests.png)
 
-**Proof server healthy on port 6300, and the deployer wallet's on-chain balance** — the contract itself is not deployed yet; the same wallet is still empty, which is what Step 5's deploy is waiting on:
+**Proof server healthy on port 6300, and the deployer wallet's on-chain balance** — captured before the wallet was funded, so it reports 0 tNight. The Preview deploy that followed it is what the address table at the top now shows:
 
 ![Proof server health check and a Preview wallet balance reporting 0 tNight](docs/img/03-proof-server-and-wallet.png)
 
