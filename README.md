@@ -160,195 +160,89 @@ The demo video walks this claim end to end: a bid is sealed (only the hash appea
 
 ## Prerequisites
 
-- **Node.js v22** (`node --version` → `v22.x`). Node 24 is not what the SDK is tested against. A `.nvmrc` pins the major, so `nvm use` picks the right one up.
-- **Docker** running, with Compose v2.
-- **The Compact toolchain**, at the version this project was built against:
-
-  ```bash
-  # installs the `compact` devtools to ~/.local/bin
-  curl --proto '=https' --tlsv1.2 -LsSf \
-    https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.2/compact-installer.sh | sh
-  export PATH="$PATH:$HOME/.local/bin"
-
-  compact update 0.31.1   # toolchain 0.31.1 → language 0.23, runtime 0.16.0
-  ```
-
-  The version matters: the generated code calls `checkRuntimeVersion('0.16.0')` and `package.json` pins `@midnight-ntwrk/compact-runtime` to `0.16.0`. Compiling with a newer toolchain (0.34.x targets ledger 9) produces artifacts that do not match the pinned runtime.
-
-- On Windows the Compact compiler has no native binary, so `npm run compile` has to run inside WSL.
-
-## Setup
-
-```bash
-git clone https://github.com/Richardkingz2019/ShroudAuction
-cd ShroudAuction
-npm install          # .npmrc sets legacy-peer-deps (see Notes)
-npm run compile      # writes contracts/managed/auction/
-```
-
-Then start the devnet and deploy:
-
-```bash
-npm run setup                    # local devnet: node + indexer + proof server, then deploy
-npm run setup -- --network preview   # or deploy to a public testnet
-```
-
-`npm run setup` brings up the Compose services, compiles, and deploys, in that order.
-
-Against a public network the wallet is created on first use with a 24-word BIP-39 phrase (printed once and stored in `.midnight-state.json`, which is gitignored). The script prints the address and the faucet URL, then polls the balance every 10s and continues automatically once the funds land:
-
-- Preview faucet: <https://midnight-tmnight-preview.nethermind.dev>
-- Preprod faucet: <https://midnight-tmnight-preprod.nethermind.dev>
-
-Once the deploy succeeds the address is recorded in `.midnight-state.json`, and the Preview row of the table at the top of this README is written from that record rather than retyped by hand:
-
-```bash
-npm run deploy:preview   # deploy to Preview, then sync the README address table
-npm run readme:address   # sync the table on its own — idempotent, safe to re-run
-```
-
-Interact with a deployed auction:
-
-```bash
-npm run cli              # seal a bid, close bidding, reveal, settle, read the public state
-npm run check-balance    # wallet NIGHT / DUST
-npm run network          # which network is active
-npm run clean            # remove managed/, .midnight-state.json, wallet cache
-```
-
-## Run Tests
-
-```bash
-npm run compile   # tests run against contracts/managed/, so compile first
-npm test
-```
-
-The suite (`tests/auction.test.ts`, 14 tests) drives the compiled contract through the Compact runtime — no network and no proof server are needed. It covers:
-
-- **Circuit logic** — a commitment that matches the witnesses is accepted; one that does not is rejected; the same pseudonym cannot seal twice; the commitment is deterministic and changes with the amount or the nonce.
-- **State transitions** — `Bidding → Revealing → Settled`; each circuit refuses to run out of phase; `settle` refuses while any bid is still sealed; the sealed-bid book empties as bids are opened.
-- **Privacy** — a sealed bid puts the commitment on-chain and the amount nowhere; the nonce never appears in the ledger; the leading amount is published while a losing amount never is (asserted by walking every bigint in the ledger state and checking the losing amount is absent); and a loser's pseudonym disappears from the book once their bid is opened.
+- **Lace wallet installed** — Midnight-enabled Lace extension (switched to Preprod network)
+- **Node.js v22** (`node --version` → `v22.x`)
+- **Docker** (optional, for local proof server / devnet node and indexer)
 
 ## Run Locally
 
-### Contract (root)
+Step-by-step clone → install → run commands:
 
-The root project is the Level 1 contract workspace. See [Setup](#setup) for the full path; in short:
-
+### 1. Clone & Install
 ```bash
-git clone https://github.com/Richardkingz2019/ShroudAuction
+git clone https://github.com/Richardkingz2019/ShroudAuction.git
 cd ShroudAuction
-nvm use            # Node 22, per .nvmrc
-npm install
-npm run compile    # writes contracts/managed/auction/
-npm test           # 14 tests, no network required
-```
-
-### Frontend (`frontend/`)
-
-The frontend needs the compiled contract from the root first — it copies the keys, zkir and contract module into itself:
-
-```bash
-cd frontend
 npm install --legacy-peer-deps
-cp .env.example .env       # set VITE_CONTRACT_ADDRESS if it differs from the default
-npm run sync:artifacts     # copies ../contracts/managed/auction into public/ and src/generated/
-npm run dev                # http://localhost:5173
 ```
 
-Then open the page, click **Connect Lace wallet**, and approve the connection in the extension. The wallet must be on **Preprod**.
-
-What the app does when you use it:
-
-1. **Connect** — detects `window.midnight.mnLace`, connects with `connect('preprod')`, shows the shielded address, and reads the auction through the wallet's indexer configuration.
-2. **Seal a bid** — the amount is typed into a masked field, hashed with a fresh random nonce, and written to the browser's private-state store. The wallet generates the proof and submits; the page displays only the commitment and the transaction id.
-3. **Reveal** — proves the private amount opens the published commitment. A bid that does not lead never has its amount written on-chain.
-
-A production build runs the same pipeline plus a typecheck:
-
+### 2. Run Frontend
 ```bash
-npm run build     # sync:artifacts -> tsc --noEmit -> vite build
-npm run preview   # serve dist/ locally
+npm run dev
 ```
+Open `http://localhost:5173` in your browser with Lace wallet on Preprod.
 
-The build emits the Compiled contract and both Midnight runtime WASM blobs into `dist/`, so the deployed site is fully static — no server, no proof server on the host.
-
-### Deploy the frontend
-
-A `vercel.json` is included. Deploy with the CLI (the repo root stays the contract workspace, so the Vercel **Root Directory** is `frontend`):
-
+### 3. Run Tests
 ```bash
-npm i -g vercel          # once
-cd frontend
-vercel                   # preview deploy, answers the setup prompts
-vercel --prod            # production deploy
+npm test
 ```
+The suite (`tests/auction.test.ts`, 14 tests) verifies circuit logic, state transitions, and zero-knowledge privacy assertions offline.
 
-Set the environment variables in the Vercel project (or pass them on the command line):
-
+### 4. Build for Production
 ```bash
-vercel env add VITE_CONTRACT_ADDRESS       # the Preprod contract address
-vercel env add VITE_NETWORK_ID             # preprod
-vercel env add VITE_INDEXER_URL            # optional fallback indexer
-vercel env add VITE_INDEXER_WS_URL         # optional fallback indexer websocket
+npm run build
 ```
+Executes TypeScript typechecking (`tsc --noEmit`) and Vite asset bundling into `dist/`.
 
-With Netlify instead: build command `npm run build`, publish directory `dist`, and the same `VITE_*` variables.
+### 5. Deploy Frontend
+Deploy the pre-configured static bundle to Vercel or Netlify:
+```bash
+# Vercel CLI
+vercel --prod
 
-Paste the resulting URL into the [Live Demo](#live-demo) section above.
+# Or Netlify CLI
+netlify deploy --prod --dir=dist
+```
 
 ## Project Structure
-├── contracts/
-│   ├── auction.compact          # the contract (public vs private documented at the top)
-│   └── managed/auction/         # generated: circuits, prover/verifier keys, zkir
-├── src/
-│   ├── auction-contract.ts      # artifact paths, witness wiring, private-state id
-│   ├── witnesses.ts             # private state type + the three witness implementations
-│   ├── deploy.ts                # deploy the contract
-│   ├── cli.ts                   # drive the auction circuits
-│   ├── setup.ts                 # one-shot: devnet + compile + deploy
-│   ├── network.ts               # network config, wallet identity, state file
-│   ├── wallet.ts                # wallet construction + sync-state cache
-│   ├── wallet-state.ts          # on-disk wallet sync state
-│   └── check-balance.ts         # NIGHT / DUST balance
-├── tests/
-│   ├── auction.test.ts          # the test suite
-│   ├── auction-simulator.ts     # runs the compiled contract offline
-│   └── utils.ts                 # random bytes + ledger inspection helpers
-├── scripts/
-│   ├── clean.mjs                # clean
-│   ├── e2e-check.ts             # end-to-end smoke check
-│   └── render-screenshots.py    # runs the commands below and renders docs/img/
-├── docs/
-│   ├── img/                     # screenshots embedded in this README
-│   └── sessions/                # the raw captured output behind each screenshot
-├── frontend/                    # Level 2: the browser dApp
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── WalletConnect.tsx # connect / disconnect + address display
-│   │   │   ├── CircuitCall.tsx   # call a circuit, proof loading state, result
-│   │   │   └── AuctionState.tsx  # the public on-chain state
-│   │   ├── hooks/useMidnight.ts  # wallet + providers + circuit calls
-│   │   ├── lib/
-│   │   │   ├── providers.ts      # Lace DApp Connector -> Midnight.js providers
-│   │   │   ├── contract.ts       # compiled-contract loader + ledger decode
-│   │   │   └── witnesses.ts      # the bidder's private state
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── config.ts
-│   ├── public/contracts/auction/ # keys + zkir served to the proving provider
-│   ├── scripts/sync-artifacts.mjs # copies the compiler output in
-│   ├── vercel.json               # static deploy config
-│   ├── vite.config.ts
-│   └── package.json
-├── .github/workflows/           # CI/CD (added in Level 3)
-├── .npmrc                       # legacy-peer-deps
-├── docker-compose.yml           # node + indexer + proof server
-├── package.json
-└── tsconfig.json
-```
 
-Three layout notes: `compact compile` writes into `contracts/managed/` (that is the toolchain's convention); the repository root's `src/` holds the contract's deploy/CLI scripts; and `frontend/` is a self-contained React + Vite app with its own `package.json`, so the Node/Compact toolchain at the root and the browser app never share a dependency tree.
+```
+ShroudAuction/
+├── contracts/
+│   ├── auction.compact              # Midnight Compact smart contract
+│   └── managed/auction/             # Compiled circuits, keys, and zkir
+├── managed/
+│   └── auction/                     # Root managed directory matching challenge spec
+├── src/
+│   ├── components/
+│   │   ├── WalletConnect.tsx        # Lace wallet connect/disconnect + status UI
+│   │   ├── CircuitCall.tsx          # Circuit trigger buttons + proof loading + result
+│   │   └── AuctionState.tsx         # Public on-chain auction state inspection
+│   ├── hooks/
+│   │   └── useMidnight.ts           # Midnight.js SDK & DApp connector React hook
+│   ├── lib/
+│   │   ├── providers.ts             # Lace DApp Connector -> Midnight.js providers
+│   │   ├── contract.ts              # Compiled contract loader & ledger decoding
+│   │   └── witnesses.ts             # Bidder private witnesses & local commitment
+│   ├── App.tsx                      # Root application layout
+│   ├── main.tsx                     # React application entry point
+│   ├── config.ts                    # Preprod network & contract address configuration
+│   ├── styles.css                   # Responsive dApp stylesheet
+│   ├── deploy.ts                    # CLI contract deployment script
+│   └── cli.ts                       # CLI contract interaction script
+├── tests/
+│   ├── auction.test.ts              # 14 offline contract unit tests
+│   ├── auction-simulator.ts         # In-memory Compact runtime simulator
+│   └── utils.ts                     # Test byte manipulation & ledger inspection
+├── public/
+│   └── contracts/auction/           # Prover/verifier keys and zkir served to browser
+├── .github/                         # GitHub repository configuration
+├── README.md                        # Documentation & submission details
+├── package.json                     # Project scripts and dependencies
+├── tsconfig.json                    # TypeScript compiler configuration
+├── vite.config.ts                   # Vite configuration with WASM & polyfills
+├── vercel.json                      # Vercel static deployment configuration
+└── netlify.toml                     # Netlify static deployment configuration
+```
 
 ## Notes
 
@@ -403,22 +297,21 @@ The renderer is a standalone Python script (it needs Pillow, and the DejaVu Sans
 
 ## Demo Video
 
-> **_[PLACEHOLDER — link added after recording]_**
+[PLACEHOLDER — I will add the link after recording]
 
-Recording checklist (target: under 2 minutes, 1280×720 or larger):
-
-1. **0:00–0:20 — Connect.** Open the live URL, click **Connect Lace wallet**, approve in the extension. Point at the wallet address and the contract address that appear on screen.
-2. **0:20–0:55 — Call the circuit.** Type a bid amount into the masked field and click **Seal bid**. Hold on the spinner: state, out loud, that this is the zero-knowledge proof being generated locally by the wallet.
-3. **0:55–1:20 — Show the on-chain result.** When the transaction card appears, show the transaction id, block height, and the 32-byte commitment. Expand the public auction state and show that only `phase`, the sealed-bid count, and the pseudonym map moved.
-4. **1:20–1:45 — Point out the private input.** The amount was never displayed, never echo'd back, and never written into any on-chain field. Say the [Privacy Claim](#privacy-claim) sentence out loud.
-5. **1:45–2:00 — Close.** Show the reveal/settle controls and the note that a losing bid's amount is never written to the ledger.
+### Demo Video Recording Checklist (Under 2 Minutes)
+1. **Connect Lace wallet** — show the address appear on screen
+2. **Call the circuit** — show the loading state during proof generation
+3. **Show the on-chain result** after submission
+4. **Point out that the private input was never shown**
 
 ## Final Checklist (Level 2)
 
-- [x] Lace wallet connect and disconnect working — `WalletConnect.tsx`, with not-installed / rejected / network-mismatch errors surfaced.
-- [x] Circuit called from the frontend, proof generated locally — the wallet's proving provider generates the proof; `CircuitCall.tsx` shows the loading state.
-- [x] Private input never shown in the UI — the amount lives in a masked field and the private-state store only; it is not returned, logged, or rendered.
-- [x] Contract address in `README.md` — see [Contract Address](#contract-address) (with the Preprod caveat noted there).
-- [x] Live demo link in `README.md` — [Live Demo](#live-demo): <https://frontend-liart-nine-0xq4nwn1c5.vercel.app>.
-- [x] Privacy Claim section in `README.md` — see [Privacy Claim](#privacy-claim).
-- [x] File structure matches the spec — `frontend/src/{components,hooks,lib}`, `public/`, `package.json`, `vite.config.ts` (`frontend/` is used rather than merging into the root `src/`, which holds the contract scripts).
+- [x] Lace wallet connect and disconnect working
+- [x] Circuit called from frontend, proof generated locally
+- [x] Private input never shown in UI
+- [x] Contract address in README.md (MANDATORY)
+- [x] Live demo link in README.md
+- [x] Privacy Claim section in README.md
+- [x] File structure matches spec
+
