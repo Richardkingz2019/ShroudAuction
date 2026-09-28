@@ -16,7 +16,7 @@ build/
 .env.production.local
 
 # Contract artifacts
-contracts/managed/
+# contracts/managed/ (tracked so tests run offline without local compact toolchain)
 
 # Deployment info
 deployment.json
