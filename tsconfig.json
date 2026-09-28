@@ -1,21 +1,23 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "jsx": "react-jsx",
     "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
+    "noEmit": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "types": ["vite/client", "node"]
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "contracts/managed"]
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "contracts/managed", "src/generated"]
 }
