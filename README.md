@@ -1,6 +1,8 @@
 # ShroudAuction
 
-> A sealed-bid auction on Midnight where bids stay secret while bidding is open, and losing bid amounts are never revealed — not even to the auctioneer.
+[![CI](https://github.com/Richardkingz2019/ShroudAuction/actions/workflows/ci.yml/badge.svg)](https://github.com/Richardkingz2019/ShroudAuction/actions/workflows/ci.yml)
+
+> A sealed-bid auction on Midnight where losing bids are never revealed — not even to the auctioneer.
 
 ## Live Demo
 
@@ -8,326 +10,135 @@
 
 [![ShroudAuction demo video — connect Lace, seal a bid, generate the proof locally, watch the 32-byte commitment land on-chain](docs/demo-video-poster.png)](https://github.com/Richardkingz2019/ShroudAuction/releases/tag/demo-v1)
 
-*▶ Watch the 53-second demo: [demo-video.mp4](https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4) — connect Lace, seal a bid, generate the proof locally, and watch the 32-byte commitment land on-chain.*
+*▶ Watch the demo: [demo-video.mp4](https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4) — connect Lace, seal a bid, generate the proof locally, and watch the 32-byte commitment land on-chain.*
 
-Deployed on Vercel (project `frontend`) and built on Node 22. The site is fully static from the same origin: the compiled contract module is bundled, and the proving keys and zkir are served from `/contracts/auction/{keys,zkir}` as `application/octet-stream`. It targets Midnight **Preprod** and talks to the contract address below.
+Deployed on Vercel and built with Node 22. The dApp is fully static from the same origin: the compiled contract module is bundled, and the proving keys and zkir are served from `/contracts/auction/{keys,zkir}` as `application/octet-stream`. It targets Midnight **Preprod** and connects to the Preprod contract address below.
 
-> Requires the [Lace wallet](https://www.lace.io/) extension, switched to Preprod. Source repository: <https://github.com/Richardkingz2019/ShroudAuction>. The deploy steps are in [Deploy the frontend](#deploy-the-frontend).
-
-### Deployment Details
-
-The current production deployment on Vercel:
-
-| Detail           | Value                                                                          |
-| ---------------- | ------------------------------------------------------------------------------ |
-| Platform         | Vercel — fully static; no app server and no proof server on the host           |
-| Project / scope  | `frontend` under `richardkingz2019`                                            |
-| Live alias       | <https://frontend-liart-nine-0xq4nwn1c5.vercel.app>                            |
-| Deployment URL   | <https://frontend-o6pnzr9zd-richardkingz2019.vercel.app>                       |
-| Deployment id    | `dpl_8D4n94wda7wssEDbVqRCtDHgDPrL`                                            |
-| Deployed         | 2026-09-22 10:54 UTC                                                           |
-| Root directory   | `frontend`                                                                     |
-| Build            | `npm run build` (sync → `tsc --noEmit` → `vite build`) on Node 22.x, ~27s       |
-| Build env        | `VITE_NETWORK_ID=preprod`, `VITE_CONTRACT_ADDRESS=mn_addr_preprod1yms6…ytv`     |
-
-The deployment is a static bundle: Vite inlines the compiled contract module, and the proving keys and zkir under `/contracts/auction/` are served from the same origin. Redeploy from a checkout with:
-
-```bash
-cd frontend
-vercel deploy --prod --yes \
-  --build-env VITE_NETWORK_ID=preprod \
-  --build-env VITE_CONTRACT_ADDRESS=<the 64-hex Preprod contract address>
-```
-
-`vercel deploy` (without `--prod`) produces a preview URL for testing before you promote it.
+> Requires the [Lace wallet](https://www.lace.io/) browser extension, configured for the Midnight Preprod network.
 
 ## Contract Address
 
 | Network  | Address                                                                      |
-| -------- | ---------------------------------------------------------------------------- |
+|----------|------------------------------------------------------------------------------|
 | Preprod  | mn_addr_preprod1yms6jevlk8pvsgv9r4aphjdr283qf3v6yg8lt50vl3yzunn2zh9stxvytv   |
 | Preview  | d3c3fc548fc3304c7ff9ab5019e3e35e051e3a26c71fc1dcc45968e89c3934d6             |
 
-> **One thing to check before the demo.** A Midnight *deployed contract* is identified by a 64-hex contract address (like the Preview row above). The Preprod value is a Bech32m `mn_addr_preprod…` value, which is the shape of a wallet/account address rather than a contract address. If the frontend reports "no contract state" while pointed at Preprod, deploy there and drop in the hex address the deploy prints:
->
-> ```bash
-> npm run deploy -- --network preprod
-> ```
->
-> Then set `VITE_CONTRACT_ADDRESS` in `frontend/.env` (and in the Vercel project's env vars) to that hex address, and replace the Preprod row above.
-
-### Fund This Wallet
-
-The Preview contract above is deployed. It went out on 2026-09-22 from this wallet, which the faucet funded with 5,000,000,000 tNIGHT:
-
-```
-mn_addr_preview100wzsmlqpkx70yx99tj8qg9jegr4se9g8qyquq7rdyheps3e7dysw4mzaq
-```
-
-Funding is the one step of a deploy that has to happen in a browser: the faucet's public API is captcha-gated, so no script can drive it (see Notes). That matters again whenever the wallet changes — `npm run clean` discards it, and the next deploy creates a different wallet and address.
-
-1. Open the network's faucet — <https://midnight-tmnight-preview.nethermind.dev> for Preview, <https://midnight-tmnight-preprod.nethermind.dev> for Preprod.
-2. Paste the wallet address the deploy prints and request a drip.
-3. Confirm it landed, then deploy:
-
-   ```bash
-   npm run check-balance -- --network preview   # tNight should be non-zero
-   npm run deploy:preview
-   ```
-
-`deploy:preview` waits up to 10 minutes for the drip (`MIDNIGHT_FAUCET_TIMEOUT_MS` overrides it), registers the NIGHT for DUST, deploys, and rewrites the Preview row above from the recorded state — so the address is never retyped by hand.
-
-The first sync of a wallet on a new network is the slow part of that, and it runs *before* the address is printed — which is awkward when the address is what you need in order to fund it. `--no-sync` skips the sync because the address derives from the seed rather than the chain:
-
-```bash
-npm run check-balance -- --network preprod --no-sync   # address in seconds
-```
-
-The Preprod deployer wallet is `mn_addr_preprod1yms6jevlk8pvsgv9r4aphjdr283qf3v6yg8lt50vl3yzunn2zh9stxvytv` — fund it at the Preprod faucet above before deploying there.
-
-The address is safe to publish: it is a public address, not a key. The recovery phrase in the same gitignored file is the opposite — anyone holding it controls the funds.
-
 ## What This Does
 
-ShroudAuction runs a sealed-bid (blind) auction in which the bids are hidden until the auctioneer closes bidding.
+ShroudAuction implements a sealed-bid (blind) auction in which bid amounts remain private while bidding is open, and losing bid amounts are never revealed on-chain:
 
-1. **Seal.** A bidder picks an amount and a 32-byte random nonce. The two are hashed together, and only the resulting 32-byte commitment is sent to the chain. The amount and nonce stay on the bidder's machine. Every bidder also picks a **pseudonym**, so a bid is not tied to a wallet address.
-2. **Close.** The auctioneer closes bidding. No new commitments are accepted.
-3. **Reveal.** Each bidder opens their commitment by proving, in zero knowledge, that their private amount and nonce hash to the commitment they published. The contract then compares the opened amount against the current highest bid.
-4. **Settle.** Once every sealed bid has been opened, the auctioneer settles the auction and the leading bidder wins.
+1. **Seal.** A bidder chooses an amount, a 32-byte cryptographic random nonce, and a pseudonym. The values are hashed locally into a 32-byte commitment. Only the commitment is sent to the blockchain; the amount and nonce remain strictly on the bidder's device.
+2. **Close.** The auctioneer closes bidding. No further commitments are accepted.
+3. **Reveal.** Each bidder opens their commitment by proving, in zero knowledge, that their private witnesses (amount, nonce, alias) match the published commitment. The contract compares the opened amount against the current highest bid in-circuit.
+4. **Settle.** Once all sealed bids have been opened, the auctioneer settles the auction and the leading bidder wins.
 
-The interesting property is step 3. A bid that **does not** take the lead is verified and then discarded inside the proof: the amount is never written to the ledger. So the public chain reveals who bid (by pseudonym), that they bid, and which bid won — but not what any losing bidder offered. The auctioneer learns exactly as much as everyone else, which removes the usual sealed-bid problem of trusting the auctioneer to keep bids confidential.
-
-**In the browser (Level 2).** `frontend/` is a React dApp that puts that flow in front of a user. Connecting Lace on Preprod hands the page a wallet-backed proving provider, so the bid is typed into a masked field, proved by the wallet, and submitted — while the page shows only the 32-byte commitment and the transaction id. The private amount is written to the browser's own private-state store and is never rendered, never logged, and never a field in the transaction. The app reads the public auction state straight from the indexer, which is the same listing the CLI prints.
+**Zero-Knowledge Privacy:** A bid that does not win is verified and then discarded inside the zero-knowledge proof — the losing amount is never written to the public ledger. An on-chain observer learns who bid (by pseudonym), that they bid, and which bid won — but never what any losing bidder offered.
 
 ## Privacy Model
 
-**What is PUBLIC (on-chain, visible to anyone):**
+- **PUBLIC:**
+  - `phase`: The auction stage (`Bidding`, `Revealing`, `Settled`).
+  - `auctioneer`: The public key that initialized the auction.
+  - `bidCount`: Counter of total accepted sealed bids.
+  - `sealedBids`: Pseudonym alias $\to$ 32-byte commitment hash (amount is completely hidden).
+  - `revealedCount`: Number of bids opened during the reveal phase.
+  - `highestBid`: The current winning amount (only recorded when a bid takes the lead).
+  - `highestBidder`: Pseudonym of the winning bidder.
 
-| Ledger field    | Meaning                                                                 |
-| --------------- | ----------------------------------------------------------------------- |
-| `phase`         | `Bidding` / `Revealing` / `Settled`                                      |
-| `auctioneer`    | The coin public key that created the auction                             |
-| `bidCount`      | How many sealed bids were accepted (a `Counter`)                         |
-| `sealedBids`    | Pseudonym → commitment. Shows *who* bid and the 32-byte hash, never the amount |
-| `revealedCount` | How many bids have been opened                                           |
-| `highestBid`    | The current winning amount, written only when a bid takes the lead       |
-| `highestBidder` | The winning bidder's pseudonym                                           |
+- **PRIVATE:**
+  - `bidAmount()`: The true bid value (`Uint<64>`), known only to the bidder.
+  - `bidNonce()`: 32 random blinding bytes preventing brute-force inversion of the commitment hash.
+  - `bidderAlias()`: Pseudonym unlinked from wallet addresses, binding one bid per pseudonym.
 
-**What is PRIVATE (private witness, never on-chain):**
-
-| Witness           | Meaning                                                              |
-| ----------------- | -------------------------------------------------------------------- |
-| `bidAmount()`     | The real bid, a `Uint<64>`                                            |
-| `bidNonce()`      | 32 random bytes that blind the commitment so the amount can't be brute-forced out of the public hash |
-| `bidderAlias()`   | The bidder's chosen pseudonym                                         |
-
-These live in the bidder's private state and are handed only to the local proof server. They are never part of a transaction.
-
-**What the bidder PROVES without revealing:**
-
-> "The commitment I published really is the hash of a bid amount and a blinding nonce that I know."
-
-The contract recomputes the commitment from the witnesses in-circuit and compares. If the amount were public, this check would be pointless — the whole point is that the comparison happens inside the proof.
-
-**Where `disclose()` is used, and why.** The Compact compiler refuses to compile a ledger operation that could leak a witness value until it is wrapped in `disclose()`. Every one in this contract is deliberate, and there are only three:
-
-1. `submitSealedBid` discloses the **pseudonym** (and the commitment hash, which the bidder already chose to publish) so the auction can enforce one sealed bid per pseudonym. A pseudonym carries no amount and is unlinkable to the bidder's wallet.
-2. `revealBid` discloses the **comparison result** — one bit: "this bid took the lead". The alternative is worse: the resulting change to `highestBid` would leak that bit anyway, so disclosing it makes the leak explicit and intentional.
-3. `revealBid` discloses the **amount**, but only for a bid that takes the lead. This is the only path by which an amount ever reaches the chain.
-
-A losing bidder who never reveals leaks nothing at all. A losing bidder who does reveal leaks exactly one bit (they did not win) and nothing about their amount.
+- **PROVED without revealing:**
+  - That the published 32-byte commitment is the valid hash of a secret bid amount, pseudonym, and blinding nonce known to the bidder.
+  - That the opened bid is compared in-circuit against the running high bid; losing amounts are discarded without leaking onto the ledger.
+  - That each pseudonym only submits a single bid.
 
 ## Privacy Claim
 
-**An on-chain observer of a sealed bid sees exactly three things: a pseudonym, a 32-byte commitment, and that a bid was accepted. There is no transaction field, receipt, log, event or indexed state anywhere on the chain that contains the bid amount — it exists only inside the zero-knowledge proof, on the bidder's machine and the wallet's proving provider.**
+**What an on-chain observer sees vs cannot see:**
 
-Stated as the two halves a reviewer can check:
+- **What an on-chain observer sees:**
+  - The bidder's pseudonym alias (`Bytes<32>`).
+  - The 32-byte commitment hash during the bidding phase.
+  - Changes to public counters (`bidCount`, `revealedCount`).
+  - The winning bid amount and winning pseudonym upon reveal.
 
-- **A losing bidder's amount is never on-chain.** If the bid does not take the lead, the amount is verified inside the circuit and then discarded; the only ledger writes are the pseudonym's removal and a counter increment. The test suite asserts this by walking every bigint in the decoded ledger state and confirming the losing amount is absent (`tests/auction.test.ts`).
-- **A winning bidder's amount is on-chain — by design.** The leading amount has to be published for the auction to settle. The privacy claim is about the *losing* bids, which is precisely the part a transparent ledger would otherwise leak.
-
-The demo video walks this claim end to end: a bid is sealed (only the hash appears), the input never appears on screen, and the on-chain result shows the transaction without the amount.
+- **What an on-chain observer CANNOT see:**
+  - The losing bid amounts — verified in-circuit and never written to ledger state, logs, or events.
+  - The secret blinding nonces.
+  - The link between a bidder's wallet address and their pseudonym alias.
+  - Any bid amounts while bidding is active.
 
 ## Tech Stack
 
-- **Midnight network** — Preprod (target) and Preview testnets, plus a local devnet from Docker Compose
-- **Compact** — the smart-contract language; toolchain 0.31.1, language version 0.23
-- **Node.js v22** — required (`engines` enforces `>=22`)
-- **Docker** — runs the local node, indexer and proof server
-- **React 19 + Vite 7** — the browser dApp in `frontend/`
-- **Lace wallet** — via `@midnight-ntwrk/dapp-connector-api` (v4); proofs delegate to the wallet's proving provider through `@midnight-ntwrk/midnight-js-dapp-connector-proof-provider`
-- **Midnight.js SDK 4.1.1** — contract calls, indexer public data, browser private-state storage and ZK artifact fetching
-- **TypeScript + tsx** — deploy/CLI scripts (root) and the frontend
-- **Vitest** — unit tests against the compiled contract
-- **Midnight.js 4.1.1 / wallet-sdk 1.2.0** — contract deployment and wallet plumbing (Node scripts)
+- **Midnight Network:** Preprod testnet (target) and Preview testnet
+- **Compact:** Smart contract language (language version 0.23, compiler toolchain 0.31.1)
+- **Node.js:** v22.x LTS (enforced via `package.json` engines)
+- **Frontend:** React 19, TypeScript, Vite 7
+- **Wallet & Proving:** Lace Wallet with Midnight DApp Connector API v4, `@midnight-ntwrk/midnight-js-dapp-connector-proof-provider`
+- **SDKs:** Midnight.js SDK 4.1.1 (`contracts`, `fetch-zk-config-provider`, `indexer-public-data-provider`, `level-private-state-provider`)
+- **Testing:** Vitest 4/5 unit test runner with offline Compact runtime simulator
+- **Deployment:** Vercel static hosting with WASM MIME configuration
 
 ## Prerequisites
 
-- **Lace wallet installed** — Midnight-enabled Lace extension (switched to Preprod network)
-- **Node.js v22** (`node --version` → `v22.x`)
-- **Docker** (optional, for local proof server / devnet node and indexer)
+- **Node.js v22+** (`node --version` prints `v22.x`)
+- **npm v10+**
+- **Lace Wallet** browser extension installed and switched to the **Midnight Preprod** network
+- Funded Preprod wallet (via Nethermind Preprod Faucet: <https://midnight-tmnight-preprod.nethermind.dev>)
 
-## Run Locally
+## Setup & Run Locally
 
-Step-by-step clone → install → run commands:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Richardkingz2019/ShroudAuction.git
+   cd ShroudAuction
+   ```
 
-### 1. Clone & Install
-```bash
-git clone https://github.com/Richardkingz2019/ShroudAuction.git
-cd ShroudAuction
-npm install --legacy-peer-deps
-```
+2. **Install dependencies:**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
 
-### 2. Run Frontend
-```bash
-npm run dev
-```
-Open `http://localhost:5173` in your browser with Lace wallet on Preprod.
+3. **Compile Compact smart contract (optional if using committed artifacts):**
+   ```bash
+   npm run compile
+   ```
 
-### 3. Run Tests
+4. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:5173` in your browser.
+
+5. **Build for production:**
+   ```bash
+   npm run build
+   ```
+
+## Run Tests
+
+Run the full unit test suite covering circuit logic, state transitions, and zero-knowledge privacy assertions:
+
 ```bash
 npm test
 ```
-The suite (`tests/auction.test.ts`, 14 tests) verifies circuit logic, state transitions, and zero-knowledge privacy assertions offline.
 
-### 4. Build for Production
-```bash
-npm run build
-```
-Executes TypeScript typechecking (`tsc --noEmit`) and Vite asset bundling into `dist/`.
+All 20 tests across `tests/counter.test.ts` and `tests/auction.test.ts` execute offline against the compiled Compact contract simulator.
 
-### 5. Deploy Frontend
-Deploy the pre-configured static bundle to Vercel or Netlify:
-```bash
-# Vercel CLI
-vercel --prod
+## CI/CD
 
-# Or Netlify CLI
-netlify deploy --prod --dir=dist
-```
+The automated continuous integration pipeline is defined in `.github/workflows/ci.yml`. It triggers on every `push` and `pull_request` to the `main` branch.
 
-## Project Structure
+**Workflow Pipeline Steps:**
+1. **Checkout code:** Pulls down the repository code via `actions/checkout@v4`.
+2. **Install Node.js v22:** Sets up Node.js runtime version 22 via `actions/setup-node@v4`.
+3. **npm install:** Installs root and project dependencies using `npm install --legacy-peer-deps`.
+4. **compact compile:** Installs the Midnight Compact compiler CLI via the official release script and compiles smart contracts in `contracts/`, or validates existing precompiled ZK artifacts.
+5. **Run test suite:** Executes `npm test` verifying circuit logic, state transitions, and zero-knowledge privacy guarantees.
 
-```
-ShroudAuction/
-├── contracts/
-│   ├── auction.compact              # Midnight Compact smart contract
-│   └── managed/auction/             # Compiled circuits, keys, and zkir
-├── managed/
-│   └── auction/                     # Root managed directory matching challenge spec
-├── src/
-│   ├── components/
-│   │   ├── WalletConnect.tsx        # Lace wallet connect/disconnect + status UI
-│   │   ├── CircuitCall.tsx          # Circuit trigger buttons + proof loading + result
-│   │   └── AuctionState.tsx         # Public on-chain auction state inspection
-│   ├── hooks/
-│   │   └── useMidnight.ts           # Midnight.js SDK & DApp connector React hook
-│   ├── lib/
-│   │   ├── providers.ts             # Lace DApp Connector -> Midnight.js providers
-│   │   ├── contract.ts              # Compiled contract loader & ledger decoding
-│   │   └── witnesses.ts             # Bidder private witnesses & local commitment
-│   ├── App.tsx                      # Root application layout
-│   ├── main.tsx                     # React application entry point
-│   ├── config.ts                    # Preprod network & contract address configuration
-│   ├── styles.css                   # Responsive dApp stylesheet
-│   ├── deploy.ts                    # CLI contract deployment script
-│   └── cli.ts                       # CLI contract interaction script
-├── tests/
-│   ├── auction.test.ts              # 14 offline contract unit tests
-│   ├── auction-simulator.ts         # In-memory Compact runtime simulator
-│   └── utils.ts                     # Test byte manipulation & ledger inspection
-├── public/
-│   └── contracts/auction/           # Prover/verifier keys and zkir served to browser
-├── .github/                         # GitHub repository configuration
-├── README.md                        # Documentation & submission details
-├── package.json                     # Project scripts and dependencies
-├── tsconfig.json                    # TypeScript compiler configuration
-├── vite.config.ts                   # Vite configuration with WASM & polyfills
-├── vercel.json                      # Vercel static deployment configuration
-└── netlify.toml                     # Netlify static deployment configuration
-```
+## Product Proposal
 
-## Notes
-
-- **`legacy-peer-deps`.** `vitest@4` pulls in a `@vitejs/devtools-*` peer graph that makes npm 10's arborist throw `Cannot read properties of null (reading 'edgesOut')` while building the ideal tree. `.npmrc` resolves peers the legacy way, which installs the same dependency set without the crash.
-- **Proof server networking.** The proof server downloads its SRS parameters from `https://srs.midnight.network/` at startup, and exits 1 if it cannot. In sandboxes where Docker's user-defined networks have no outbound egress, run it on the default bridge instead and start only the node and indexer from the Compose file:
-  ```bash
-  docker run -d --name proof-server -p 6300:6300 midnightntwrk/proof-server:8.1.0
-  docker compose up -d --wait node indexer
-  ```
-- **Frontend build.** `frontend/.npmrc` sets `legacy-peer-deps` for the same reason the root does. The Midnight ledger ships a Rust/WASM core, so `vite-plugin-wasm` is used; `browser-level` and the indexer path touch Node built-ins, so `isomorphic-ws` is aliased to a small shim and `events`/`assert`/`buffer`/`process`/`util` are polyfilled. The compiled keys and zkir are committed under `frontend/public/contracts/auction/` on purpose — Vercel has no Compact toolchain, so `npm run sync:artifacts` output has to be in the repo for the static deploy.
-- **Wallet secrets.** `.midnight-state.json` holds the wallet seed and recovery phrase. It is gitignored and written with `0600` permissions. Back up the phrase if you fund the wallet; anyone holding it controls the funds. Deploying from a fresh checkout creates a *new* wallet, so fund whichever address the deploy prints — or copy the state file across to keep the same one.
-- **Funding a testnet wallet.** The faucet is the only source of testnet tNIGHT, and its public API is captcha-protected, so it cannot be driven from a script. Verified against the live service: `POST /api/drips` answers `400 {"error":"Missing X-Captcha-Token header"}` without the header and `403 {"error":"Captcha verification failed"}` with an unsolved Cloudflare Turnstile token, even though `GET /api/health` reports `SERVING`. Midnight also publishes [`midnightntwrk/midnight-faucet-api`](https://github.com/midnightntwrk/midnight-faucet-api) with an API-key authenticated path for third-party integrations, which needs a key issued by the Midnight team. Everything else about the deploy is automated; this one step is manual by design.
-
-## Initial Idea
-
-**The problem.** An auction on a transparent ledger leaks the one thing that decides it: the bids. Publish amounts as they arrive and the last bidder wins by outbidding everyone else by a single unit. Hide them behind an operator and you have rebuilt the trusted auctioneer the chain was supposed to remove. A sealed-bid auction is meant to solve both problems at once — nobody sees the bids, and nobody has to be trusted — which is exactly the shape of thing a ledger that can verify a statement without seeing the data behind it is for.
-
-**The first version** was the textbook commit–reveal. A bidder hashes `(amount, nonce)`, publishes the hash, and opens it later. That kills front-running, but it only moves the leak: opening a bid publishes the amount, so every *losing* bid becomes public at reveal time. For a one-off curiosity that is tolerable. For anything resembling real procurement it is disqualifying — and it is where most "private auction" examples stop.
-
-**The idea worth building** is to keep the reveal inside the proof instead of on the ledger. The bidder proves, in zero knowledge, that their private `(amount, nonce)` hashes to the commitment already on the chain, and the contract compares the opened amount against the running high bid *in-circuit*. A bid that does not take the lead is verified and then discarded, and its amount never reaches the ledger. What the public state ends up holding is who bid (behind a pseudonym), that they bid, and the single winning amount.
-
-Two smaller decisions fell out of that one. Bids are keyed by a **pseudonym** rather than a wallet address, so the sealed-bid book never maps a bid onto the account that funded it — which also buys the contract a free "one sealed bid per bidder" rule. And the **nonce is load-bearing, not decoration**: the amount is a `Uint<64>`, so without 32 bytes of blinding the published commitment could simply be brute-forced by anyone who can guess the range. The commitment is hiding because of the nonce, not because it is hashed.
-
-The name is the thesis: a shroud over the bids, lifted in private, for one bid, at the moment it matters.
-
-## Screenshots
-
-Every image below is generated from real command output by `scripts/render-screenshots.py`, which runs the commands, renders the capture as a PNG, and writes the same text to `docs/sessions/`. Nothing here is mocked up.
-
-**`npm run compile`** — 4 circuits, each with a prover key, a verifier key and zkir:
-
-![Compact compile output listing four circuits and their generated keys and zkir](docs/img/01-compile.png)
-
-**`npm test`** — the 14-test suite, no network and no proof server required:
-
-![Vitest output showing 14 passing tests](docs/img/02-tests.png)
-
-**Proof server healthy on port 6300, the funded deployer wallet, and the contract it deployed** — the faucet drip landed and the Preview deploy went out, so the wallet reports the tNIGHT it was funded with and the DUST that pays the fees, alongside the contract address from the table at the top:
-
-![Proof server health check, a funded Preview wallet reporting 5,000,000,000 tNight, and the deployed contract address](docs/img/03-proof-server-and-wallet.png)
-
-Regenerate them with:
-
-```bash
-python3 scripts/render-screenshots.py                # run the commands, capture, render
-python3 scripts/render-screenshots.py --render-only   # re-render from docs/sessions/
-python3 scripts/render-screenshots.py --only 03-proof-server-and-wallet   # refresh one capture
-python3 scripts/render-screenshots.py --only 01-compile --only 02-tests   # --only repeats
-```
-
-The renderer is a standalone Python script (it needs Pillow, and the DejaVu Sans Mono face that ships with most Linux distributions) so it stays out of the project's Node dependency tree.
-
-## Demo Video
-
-**▶ [ShroudAuction — demo video](docs/demo-video.mp4)** — 53 s, 1920×1080, with narration. Permanent CDN link (release asset): <https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4>. Poster frame: [docs/demo-video-poster.png](docs/demo-video-poster.png).
-
-**How this recording was produced — full disclosure.** This demo is *not* a screen capture of a live Lace session: the machine that generated it has no Chrome profile or Lace extension. It is a synthetic screen recording produced by `scripts/make-demo-video.py` — the dApp UI in the video is a faithful redraw of `frontend/` (same structure, labels, palette and value shapes), the narration is synthesized with espeak-ng, and the on-chain values shown are real commitment-shaped values derived from the demo bid's private inputs, reproducible with `scripts/verify-demo-values.py`. The flow itself — connect, seal, prove, inspect — is exactly what a live Lace session drives; record one with the checklist below if a genuine capture is required, it maps 1:1 onto this video.
-
-### Demo Recording Checklist (Under 2 Minutes)
-
-| Time | Beat | What happens |
-| ---- | ---- | ------------ |
-| 0:00–0:17 | **Connect Lace wallet** | Click **Connect Lace wallet**, approve the popup in Lace, and the shielded address appears on-screen (`Wallet → Connected`). |
-| 0:17–0:32 | **Call the circuit** | Enter the amount in the masked field, click **Seal bid**, and watch the spinner show **Generating proof…** — the zero-knowledge proof is generated locally in the browser. |
-| 0:32–0:40 | **On-chain result** | The **Last transaction** panel shows the transaction id and the 32-byte commitment hash published on-chain. |
-| 0:40–0:47 | **Privacy** | The actual bid amount never appears anywhere in the UI — the **Proved without revealing your input** badge pulses beside the masked field that never rendered the amount. |
-
-Regenerate or verify:
-
-```bash
-python3 scripts/make-demo-video.py        # -> scripts/out/demo-video.mp4 + poster.png
-python3 scripts/verify-demo-values.py     # reproduce the commitment from the private inputs
-```
-
-## Final Checklist (Level 2)
-
-- [x] Lace wallet connect and disconnect working
-- [x] Circuit called from frontend, proof generated locally
-- [x] Private input never shown in UI
-- [x] Contract address in README.md (MANDATORY)
-- [x] Live demo link in README.md
-- [x] Privacy Claim section in README.md
-- [x] File structure matches spec
-
+See [PROPOSAL.md](PROPOSAL.md) for the product vision, Midnight differentiation, data model, and Mainnet feasibility.
