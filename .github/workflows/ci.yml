@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     name: Test & Build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout code
@@ -26,15 +26,20 @@ jobs:
 
       - name: compact compile
         run: |
-          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh || true
-          export PATH="$HOME/.compact/bin:$PATH"
-          if command -v compact &> /dev/null; then
-            compact --version || true
-            npm run compile
-          else
-            echo "Using committed compiled artifacts in contracts/managed/auction"
-            test -d contracts/managed/auction
-          fi
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+          export PATH="$HOME/.local/bin:$HOME/.compact/bin:$PATH"
+          compact update 0.31.1
+          BIN=$(find "$HOME/.compact/versions/0.31.1" -name compactc.bin | head -1)
+          ln -sf "$BIN" "$HOME/.compact/bin/compactc.bin"
+          compact --version
+          npm run compile
 
       - name: Run test suite
         run: npm test
+
+      - name: Build dApp
+        run: npm run build
+        env:
+          VITE_NETWORK_ID: preprod
+          VITE_CONTRACT_ADDRESS: mn_addr_preprod1yms6jevlk8pvsgv9r4aphjdr283qf3v6yg8lt50vl3yzunn2zh9stxvytv
+          VITE_PRIVATE_STATE_ID: shroudauction-private-state
