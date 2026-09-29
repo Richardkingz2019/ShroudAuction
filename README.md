@@ -6,6 +6,10 @@
 
 **<https://frontend-liart-nine-0xq4nwn1c5.vercel.app>**
 
+[![ShroudAuction demo video — connect Lace, seal a bid, generate the proof locally, watch the 32-byte commitment land on-chain](docs/demo-video-poster.png)](https://github.com/Richardkingz2019/ShroudAuction/releases/tag/demo-v1)
+
+*▶ Watch the 53-second demo: [demo-video.mp4](https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4) — connect Lace, seal a bid, generate the proof locally, and watch the 32-byte commitment land on-chain.*
+
 Deployed on Vercel (project `frontend`) and built on Node 22. The site is fully static from the same origin: the compiled contract module is bundled, and the proving keys and zkir are served from `/contracts/auction/{keys,zkir}` as `application/octet-stream`. It targets Midnight **Preprod** and talks to the contract address below.
 
 > Requires the [Lace wallet](https://www.lace.io/) extension, switched to Preprod. Source repository: <https://github.com/Richardkingz2019/ShroudAuction>. The deploy steps are in [Deploy the frontend](#deploy-the-frontend).
