@@ -16,6 +16,7 @@ interface CircuitCallProps {
   pendingCircuit: CircuitName | null;
   auction: AuctionSnapshot | null;
   history: CircuitResult[];
+  error?: string | null;
   onSealBid: (amount: bigint) => Promise<CircuitResult | null>;
   onRevealBid: () => Promise<CircuitResult | null>;
   onCloseBidding: () => Promise<CircuitResult | null>;
@@ -35,6 +36,7 @@ export function CircuitCall({
   pendingCircuit,
   auction,
   history,
+  error,
   onSealBid,
   onRevealBid,
   onCloseBidding,
@@ -85,6 +87,12 @@ export function CircuitCall({
 
       {!connected ? (
         <p className="muted">Connect your wallet to call the auction circuits.</p>
+      ) : null}
+
+      {error ? (
+        <div className="alert alert-circuit" role="alert">
+          <strong>Circuit / Transaction Error:</strong> {error}
+        </div>
       ) : null}
 
       {/* ── The private input ──────────────────────────────────────────── */}

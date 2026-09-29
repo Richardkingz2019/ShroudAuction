@@ -313,3 +313,66 @@ code.tiny {
   border-top: 1px solid var(--line);
   padding-top: 1.25rem;
 }
+
+.alert-circuit {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Mobile responsiveness ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .facts > div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .facts dt {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .bid-row {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions-wrap {
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 768px) {
+  .actions-wrap {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .actions-wrap .btn {
+    width: auto;
+    flex: 1 1 calc(50% - 0.6rem);
+  }
+}
+

@@ -54,6 +54,7 @@ export function App() {
           pendingCircuit={midnight.pendingCircuit}
           auction={midnight.auction}
           history={midnight.history}
+          error={midnight.error}
           onSealBid={midnight.sealBid}
           onRevealBid={midnight.revealBid}
           onCloseBidding={midnight.closeBidding}
