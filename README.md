@@ -136,8 +136,34 @@ The automated continuous integration pipeline is defined in `.github/workflows/c
 1. **Checkout code:** Pulls down the repository code via `actions/checkout@v4`.
 2. **Install Node.js v22:** Sets up Node.js runtime version 22 via `actions/setup-node@v4`.
 3. **npm install:** Installs root and project dependencies using `npm install --legacy-peer-deps`.
-4. **compact compile:** Installs the Midnight Compact compiler CLI via the official release script and compiles smart contracts in `contracts/`, or validates existing precompiled ZK artifacts.
+4. **compact compile:** Installs the Midnight Compact toolchain pinned to the project's language version (0.31.1), fixes the installer's `compactc` wrapper, and compiles the circuits in `contracts/auction.compact`.
 5. **Run test suite:** Executes `npm test` verifying circuit logic, state transitions, and zero-knowledge privacy guarantees.
+6. **Build dApp:** Runs the production build (`tsc --noEmit` + `vite build`) with the Preprod environment — the pipeline fails on any build error.
+
+> The job currently runs on a self-hosted runner while the account's GitHub Actions hosted-minutes billing lock is in effect; switch `runs-on` back to `ubuntu-latest` once billing is resolved.
+
+## Demo Video
+
+**▶ [ShroudAuction — demo video](https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4)** — 1 minute, 1920×1080, with narration (repo copy: [docs/demo-video.mp4](docs/demo-video.mp4)).
+
+The video walks the three proof points of the Step 7 checklist: the full dApp flow (wallet connect → circuit call → on-chain result), the terminal test suite passing, and the green CI badge on this README. Produced by `scripts/make-demo-video.py` — a synthetic recording (no Chrome/Lace on the build machine) that redraws the real `frontend/` UI and captures the repo's real test and CI state; the commitment shown is reproducible with `scripts/verify-demo-values.py`.
+
+### Demo Video Recording Checklist (Under 1 Minute)
+
+| Time | Beat | What happens |
+| ---- | ---- | ------------ |
+| 0:00–0:08 | **dApp — connect** | Click **Connect Lace wallet**, approve in Lace, the shielded address appears and the wallet pill turns **Connected**. |
+| 0:08–0:22 | **dApp — circuit call** | Amount typed into the masked field, **Seal bid** clicked, spinner shows **Generating proof…** — the zero-knowledge proof is generated locally in the browser. |
+| 0:22–0:30 | **dApp — result** | **Last transaction** shows the tx id and the 32-byte commitment; the bid amount never appeared — **Proved without revealing your input**. |
+| 0:30–0:42 | **Terminal — tests** | `npm test` output: **20 passed (20)** across `tests/counter.test.ts` and `tests/auction.test.ts`. |
+| 0:42–0:52 | **README — CI badge** | The **CI** badge shows **passing** — the same pipeline that runs on every push. |
+
+Regenerate or verify:
+
+```bash
+python3 scripts/make-demo-video.py        # -> scripts/out/demo-video.mp4 + poster.png
+python3 scripts/verify-demo-values.py     # reproduce the commitment from the private inputs
+```
 
 ## Product Proposal
 
