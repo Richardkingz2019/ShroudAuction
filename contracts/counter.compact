@@ -1,0 +1,19 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Midnight Counter Contract
+// ═══════════════════════════════════════════════════════════════════════════
+
+pragma language_version 0.23;
+
+import CompactStandardLibrary;
+
+export ledger counter: Counter;
+
+witness incrementAmount(): Uint<16>;
+
+constructor() {
+  counter.increment(0);
+}
+
+export circuit increment(): [] {
+  counter.increment(disclose(incrementAmount()));
+}
