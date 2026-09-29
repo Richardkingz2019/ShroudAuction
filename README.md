@@ -144,7 +144,7 @@ The automated continuous integration pipeline is defined in `.github/workflows/c
 
 ## Demo Video
 
-**▶ [ShroudAuction — demo video](https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4)** — 1 minute, 1920×1080, with narration (repo copy: [docs/demo-video.mp4](docs/demo-video.mp4)).
+**▶ [ShroudAuction — demo video](https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4)** — 53 seconds, 1920×1080, with narration (repo copy: [docs/demo-video.mp4](docs/demo-video.mp4)).
 
 The video walks the three proof points of the Step 7 checklist: the full dApp flow (wallet connect → circuit call → on-chain result), the terminal test suite passing, and the green CI badge on this README. Produced by `scripts/make-demo-video.py` — a synthetic recording (no Chrome/Lace on the build machine) that redraws the real `frontend/` UI and captures the repo's real test and CI state; the commitment shown is reproducible with `scripts/verify-demo-values.py`.
 
