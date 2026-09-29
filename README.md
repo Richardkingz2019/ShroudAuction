@@ -297,7 +297,7 @@ The renderer is a standalone Python script (it needs Pillow, and the DejaVu Sans
 
 ## Demo Video
 
-**▶ [ShroudAuction — demo video](docs/demo-video.mp4)** — 53 s, 1920×1080, with narration. Poster frame: [docs/demo-video-poster.png](docs/demo-video-poster.png).
+**▶ [ShroudAuction — demo video](docs/demo-video.mp4)** — 53 s, 1920×1080, with narration. Permanent CDN link (release asset): <https://github.com/Richardkingz2019/ShroudAuction/releases/download/demo-v1/demo-video.mp4>. Poster frame: [docs/demo-video-poster.png](docs/demo-video-poster.png).
 
 **How this recording was produced — full disclosure.** This demo is *not* a screen capture of a live Lace session: the machine that generated it has no Chrome profile or Lace extension. It is a synthetic screen recording produced by `scripts/make-demo-video.py` — the dApp UI in the video is a faithful redraw of `frontend/` (same structure, labels, palette and value shapes), the narration is synthesized with espeak-ng, and the on-chain values shown are real commitment-shaped values derived from the demo bid's private inputs, reproducible with `scripts/verify-demo-values.py`. The flow itself — connect, seal, prove, inspect — is exactly what a live Lace session drives; record one with the checklist below if a genuine capture is required, it maps 1:1 onto this video.
 
