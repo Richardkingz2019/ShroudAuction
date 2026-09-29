@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js v22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: npm install
+        run: npm install --legacy-peer-deps
+
+      - name: compact compile
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh || true
+          export PATH="$HOME/.compact/bin:$PATH"
+          if command -v compact &> /dev/null; then
+            compact --version || true
+            npm run compile
+          else
+            echo "Using committed compiled artifacts in contracts/managed/auction"
+            test -d contracts/managed/auction
+          fi
+
+      - name: Run test suite
+        run: npm test
