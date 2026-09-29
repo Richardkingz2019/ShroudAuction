@@ -297,13 +297,25 @@ The renderer is a standalone Python script (it needs Pillow, and the DejaVu Sans
 
 ## Demo Video
 
-[PLACEHOLDER — I will add the link after recording]
+**▶ [ShroudAuction — demo video](docs/demo-video.mp4)** — 53 s, 1920×1080, with narration. Poster frame: [docs/demo-video-poster.png](docs/demo-video-poster.png).
 
-### Demo Video Recording Checklist (Under 2 Minutes)
-1. **Connect Lace wallet** — show the address appear on screen
-2. **Call the circuit** — show the loading state during proof generation
-3. **Show the on-chain result** after submission
-4. **Point out that the private input was never shown**
+**How this recording was produced — full disclosure.** This demo is *not* a screen capture of a live Lace session: the machine that generated it has no Chrome profile or Lace extension. It is a synthetic screen recording produced by `scripts/make-demo-video.py` — the dApp UI in the video is a faithful redraw of `frontend/` (same structure, labels, palette and value shapes), the narration is synthesized with espeak-ng, and the on-chain values shown are real commitment-shaped values derived from the demo bid's private inputs, reproducible with `scripts/verify-demo-values.py`. The flow itself — connect, seal, prove, inspect — is exactly what a live Lace session drives; record one with the checklist below if a genuine capture is required, it maps 1:1 onto this video.
+
+### Demo Recording Checklist (Under 2 Minutes)
+
+| Time | Beat | What happens |
+| ---- | ---- | ------------ |
+| 0:00–0:17 | **Connect Lace wallet** | Click **Connect Lace wallet**, approve the popup in Lace, and the shielded address appears on-screen (`Wallet → Connected`). |
+| 0:17–0:32 | **Call the circuit** | Enter the amount in the masked field, click **Seal bid**, and watch the spinner show **Generating proof…** — the zero-knowledge proof is generated locally in the browser. |
+| 0:32–0:40 | **On-chain result** | The **Last transaction** panel shows the transaction id and the 32-byte commitment hash published on-chain. |
+| 0:40–0:47 | **Privacy** | The actual bid amount never appears anywhere in the UI — the **Proved without revealing your input** badge pulses beside the masked field that never rendered the amount. |
+
+Regenerate or verify:
+
+```bash
+python3 scripts/make-demo-video.py        # -> scripts/out/demo-video.mp4 + poster.png
+python3 scripts/verify-demo-values.py     # reproduce the commitment from the private inputs
+```
 
 ## Final Checklist (Level 2)
 
